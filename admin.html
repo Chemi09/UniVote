@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Univote</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <style>
+        .admin-panel {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        .admin-card.wide {
+            grid-column: span 2;
+        }
+
+        .admin-section {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--light-gray);
+            border-radius: 12px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+            display: block;
+        }
+
+        .stat-label {
+            color: var(--dark-gray);
+            font-weight: 600;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: var(--primary-blue);
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: rgba(26, 115, 232, 0.05);
+        }
+
+        .btn-danger {
+            background: var(--error);
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+        }
+
+        .btn-warning:hover {
+            background: #f57c00;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: var(--light-gray);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-blue);
+            color: var(--white);
+        }
+
+        .candidat-photo-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 768px) {
+            .admin-card.wide {
+                grid-column: span 1;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+            }
+            
+            .tab-buttons {
+                flex-direction: column;
+            }
+        }
+        
+  
+    .logo-img {
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      margin-right: 5px;
+    }
+  
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-container" style="display:flex;align-items:center;">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+                <a href="index.html" style="color: var(--accent-orange); text-decoration: none;">← Retour à l'accueil</a>
+            </div>
+        </div>
+        <div class="vote-status status-closed" id="adminVoteStatus">
+            🔒 VOTE FERMÉ
+        </div>
+    </header>
+
+    <div class="admin-panel">
+        <!-- Connexion Admin -->
+        <div id="loginSection" class="admin-card wide">
+            <h2>Connexion Administrateur</h2>
+            <form id="adminLoginForm">
+                <div style="display: grid; gap: 1rem; max-width: 400px; margin: 0 auto;">
+                    <div class="form-group">
+                        <label class="required">Nom d'utilisateur</label>
+                        <input type="text" name="username" placeholder="admin" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Mot de passe</label>
+                        <input type="password" name="password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn">Se Connecter</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Dashboard Admin (caché au début) -->
+        <div id="adminDashboard" style="display: none;">
+            <!-- Statistiques en temps réel -->
+            <div class="admin-card wide">
+                <h2>Tableau de Bord en Temps Réel</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="statElecteurs">0</span>
+                        <span class="stat-label">Électeurs Inscrits</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="statCandidats">0</span>
+                        <span class="stat-label">Candidats</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="statVotes">0</span>
+                        <span class="stat-label">Votes Enregistrés</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="statParticipation">0%</span>
+                        <span class="stat-label">Taux de Participation</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contrôle du vote -->
+            <div class="admin-card wide">
+                <h2>Contrôle du Processus Électoral</h2>
+                <div class="control-panel">
+                    <button id="btnOuvrirVote" class="control-btn" style="background: var(--success); color: white;">
+                        🟢 Ouvrir le Vote
+                    </button>
+                    <button id="btnFermerVote" class="control-btn" style="background: var(--error); color: white;">
+                        🔒 Fermer le Vote
+                    </button>
+                    <button id="btnResetVotes" class="control-btn btn-warning">
+                        🔄 Réinitialiser les Votes
+                    </button>
+                    <button id="btnExporter" class="control-btn" style="background: var(--primary-blue); color: white;">
+                        📊 Exporter les Données
+                    </button>
+                </div>
+                <div id="controlStatus" style="text-align: center; margin-top: 1rem; font-weight: 600;"></div>
+            </div>
+
+            <!-- Navigation par onglets -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showAdminTab('resultats')">📊 Résultats</button>
+                <button class="tab-btn" onclick="showAdminTab('candidats')">👨‍💼 Candidats</button>
+                <button class="tab-btn" onclick="showAdminTab('electeurs')">👥 Électeurs</button>
+                <button class="tab-btn" onclick="showAdminTab('votes')">🗳️ Votes</button>
+                <button class="tab-btn" onclick="showAdminTab('logs')">📋 Logs Système</button>
+            </div>
+
+            <!-- Section Résultats -->
+            <div id="tabResultats" class="admin-section active">
+                <h3>Résultats des Élections</h3>
+                <div id="resultatsContainer"></div>
+            </div>
+
+            <!-- Section Candidats -->
+            <div id="tabCandidats" class="admin-section">
+                <h3>Gestion des Candidats</h3>
+                <div id="candidatsContainer"></div>
+            </div>
+
+            <!-- Section Électeurs -->
+            <div id="tabElecteurs" class="admin-section">
+                <h3>Liste des Électeurs</h3>
+                <div id="electeursContainer"></div>
+            </div>
+
+            <!-- Section Votes -->
+            <div id="tabVotes" class="admin-section">
+                <h3>Détail des Votes</h3>
+                <div id="votesContainer"></div>
+            </div>
+
+            <!-- Section Logs -->
+            <div id="tabLogs" class="admin-section">
+                <h3>Logs Système</h3>
+                <div id="logsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        const ADMIN_CREDENTIALS = {
+            username: "admin",
+            password: "admin123"
+        };
+
+        let currentAdmin = null;
+
+        // Connexion administrateur
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                currentAdmin = { username, loginTime: new Date().toISOString() };
+                localStorage.setItem('currentAdmin', JSON.stringify(currentAdmin));
+                
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                
+                showMessage('✅ Connexion administrateur réussie !', 'success');
+                updateAdminDashboard();
+            } else {
+                showMessage('❌ Identifiants administrateur incorrects', 'error');
+            }
+        });
+
+        // Vérifier si déjà connecté
+        document.addEventListener('DOMContentLoaded', function() {
+            currentAdmin = JSON.parse(localStorage.getItem('currentAdmin'));
+            if (currentAdmin) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                updateAdminDashboard();
+            }
+            
+            updateVoteStatus();
+        });
+
+        function updateAdminDashboard() {
+            const stats = db.getStats();
+            
+            // Mettre à jour les statistiques
+            document.getElementById('statElecteurs').textContent = stats.totalElecteurs;
+            document.getElementById('statCandidats').textContent = stats.totalCandidats;
+            document.getElementById('statVotes').textContent = stats.totalVotes;
+            document.getElementById('statParticipation').textContent = stats.voteRate + '%';
+            
+            // Mettre à jour le statut du vote
+            updateVoteStatus();
+            
+            // Charger les données des onglets
+            loadResultats();
+            loadCandidats();
+            loadElecteurs();
+            loadVotes();
+            loadLogs();
+        }
+
+        function updateVoteStatus() {
+            const settings = db.getSettings();
+            const statusElement = document.getElementById('adminVoteStatus');
+            const controlStatus = document.getElementById('controlStatus');
+            
+            if (settings.voteOpen) {
+                statusElement.textContent = '🟢 VOTE OUVERT';
+                statusElement.className = 'vote-status status-open';
+                controlStatus.textContent = 'Le vote est actuellement OUVERT';
+                controlStatus.style.color = 'var(--success)';
+            } else {
+                statusElement.textContent = '🔒 VOTE FERMÉ';
+                statusElement.className = 'vote-status status-closed';
+                controlStatus.textContent = 'Le vote est actuellement FERMÉ';
+                controlStatus.style.color = 'var(--error)';
+            }
+        }
+
+        // Contrôle du vote
+        document.getElementById('btnOuvrirVote').addEventListener('click', function() {
+            const settings = db.getSettings();
+            settings.voteOpen = true;
+            db.updateSettings(settings);
+            updateVoteStatus();
+            updateAdminDashboard();
+            showMessage('✅ Vote ouvert avec succès !', 'success');
+        });
+
+        document.getElementById('btnFermerVote').addEventListener('click', function() {
+            const settings = db.getSettings();
+            settings.voteOpen = false;
+            db.updateSettings(settings);
+            updateVoteStatus();
+            updateAdminDashboard();
+            showMessage('✅ Vote fermé avec succès !', 'success');
+        });
+
+        document.getElementById('btnResetVotes').addEventListener('click', function() {
+            if (confirm('⚠️ ATTENTION ! Cette action supprimera TOUS les votes. Êtes-vous sûr ?')) {
+                localStorage.setItem('univote_votes', JSON.stringify([]));
+                updateAdminDashboard();
+                showMessage('✅ Tous les votes ont été réinitialisés !', 'success');
+            }
+        });
+
+        document.getElementById('btnExporter').addEventListener('click', function() {
+            exporterDonnees();
+        });
+
+        // Navigation par onglets
+        function showAdminTab(tabName) {
+            // Masquer tous les onglets
+            document.querySelectorAll('.admin-section').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Désactiver tous les boutons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Activer l'onglet sélectionné
+            document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Chargement des données des onglets
+        function loadResultats() {
+            const candidats = db.getCandidats();
+            const votes = db.getVotes();
+            const postes = [...new Set(candidats.map(c => c.poste))];
+            
+            let html = '';
+            
+            postes.forEach(poste => {
+                const candidatsPoste = candidats.filter(c => c.poste === poste);
+                const votesPoste = votes.filter(v => v[poste]);
+                
+                // Compter les votes par candidat
+                const resultats = {};
+                votesPoste.forEach(vote => {
+                    const candidatId = vote[poste];
+                    resultats[candidatId] = (resultats[candidatId] || 0) + 1;
+                });
+                
+                // Trouver le gagnant
+                let gagnant = null;
+                let maxVotes = 0;
+                
+                Object.entries(resultats).forEach(([candidatId, nbVotes]) => {
+                    if (nbVotes > maxVotes) {
+                        maxVotes = nbVotes;
+                        gagnant = candidats.find(c => c.id == candidatId);
+                    }
+                });
+                
+                html += `
+                    <div class="admin-card" style="text-align: left; margin-bottom: 1.5rem;">
+                        <h4>${poste}</h4>
+                        ${gagnant ? `<p><strong>Gagnant :</strong> ${gagnant.prenom} ${gagnant.nom} (${maxVotes} votes)</p>` : '<p>Aucun vote pour ce poste</p>'}
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Candidat</th>
+                                    <th>Voix</th>
+                                    <th>Pourcentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${candidatsPoste.map(candidat => {
+                                    const nbVotes = resultats[candidat.id] || 0;
+                                    const pourcentage = votesPoste.length > 0 ? ((nbVotes / votesPoste.length) * 100).toFixed(1) : 0;
+                                    return `
+                                        <tr>
+                                            <td>${candidat.prenom} ${candidat.nom}</td>
+                                            <td>${nbVotes}</td>
+                                            <td>${pourcentage}%</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('resultatsContainer').innerHTML = html || '<p>Aucun résultat disponible</p>';
+        }
+
+        function loadCandidats() {
+            const candidats = db.getCandidats();
+            
+            const html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Nom Complet</th>
+                            <th>Matricule</th>
+                            <th>Poste</th>
+                            <th>Numéro Candidat</th>
+                            <th>Date Inscription</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${candidats.map(candidat => `
+                            <tr>
+                                <td>${candidat.photo ? `<img src="${candidat.photo}" class="candidat-photo-small" alt="${candidat.prenom} ${candidat.nom}">` : '-'}</td>
+                                <td>${candidat.prenom} ${candidat.nom}</td>
+                                <td>${candidat.matricule}</td>
+                                <td>${candidat.poste}</td>
+                                <td>${candidat.numCandidat}</td>
+                                <td>${new Date(candidat.dateCandidature).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p style="margin-top: 1rem; text-align: center;"><strong>Total :</strong> ${candidats.length} candidats</p>
+            `;
+            
+            document.getElementById('candidatsContainer').innerHTML = html || '<p>Aucun candidat inscrit</p>';
+        }
+
+        function loadElecteurs() {
+            const electeurs = db.getElecteurs();
+            
+            const html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nom Complet</th>
+                            <th>Matricule</th>
+                            <th>Date Inscription</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${electeurs.map(electeur => `
+                            <tr>
+                                <td>${electeur.prenom} ${electeur.nom}</td>
+                                <td>${electeur.matricule}</td>
+                                <<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration - Univote</title>
+<link rel="stylesheet" href="styles/common.css">
+
+<style>
+.admin-panel{max-width:1400px;margin:2rem auto;padding:0 1rem}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
+.admin-card{background:var(--white);padding:2rem;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.15);text-align:center}
+.admin-card.wide{grid-column:span 2}
+.admin-section{background:var(--white);padding:2rem;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,.15);margin-bottom:2rem;display:none}
+.admin-section.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+.stat-item{text-align:center;padding:1.5rem;background:var(--light-gray);border-radius:12px}
+.stat-number{font-size:2.5rem;font-weight:bold;color:var(--primary-blue)}
+.data-table{width:100%;border-collapse:collapse;margin-top:1rem}
+.data-table th,.data-table td{padding:12px;border-bottom:1px solid #e0e0e0}
+.data-table th{background:var(--primary-blue);color:#fff}
+.tab-buttons{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.tab-btn{padding:10px 20px;border:none;border-radius:8px;font-weight:600;cursor:pointer}
+.tab-btn.active{background:var(--primary-blue);color:#fff}
+.candidat-photo-small{width:40px;height:40px;border-radius:50%;object-fit:cover}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+<div class="logo-container">
+<div class="logo">UV</div>
+<div>
+<div class="logo-text">UNIVOTE</div>
+<a href="index.html">← Retour accueil</a>
+</div>
+</div>
+<div id="adminVoteStatus" class="vote-status status-closed">🔒 VOTE FERMÉ</div>
+</header>
+
+<div class="admin-panel">
+
+<!-- LOGIN -->
+<div id="loginSection" class="admin-card wide">
+<h2>Connexion Administrateur</h2>
+<form id="adminLoginForm">
+<input type="text" name="username" placeholder="admin" required>
+<input type="password" name="password" placeholder="••••••" required>
+<button class="btn">Se connecter</button>
+</form>
+</div>
+
+<!-- DASHBOARD -->
+<div id="adminDashboard" style="display:none">
+
+<div class="admin-card wide">
+<h2>Tableau de bord</h2>
+<div class="stats-grid">
+<div class="stat-item"><span id="statElecteurs" class="stat-number">0</span>Électeurs</div>
+<div class="stat-item"><span id="statCandidats" class="stat-number">0</span>Candidats</div>
+<div class="stat-item"><span id="statVotes" class="stat-number">0</span>Votes</div>
+</div>
+</div>
+
+<div class="tab-buttons">
+<button class="tab-btn active" data-tab="Resultats">📊 Résultats</button>
+<button class="tab-btn" data-tab="Candidats">👤 Candidats</button>
+<button class="tab-btn" data-tab="Electeurs">👥 Électeurs</button>
+<button class="tab-btn" data-tab="Votes">🗳️ Votes</button>
+</div>
+
+<div id="tabResultats" class="admin-section active"></div>
+<div id="tabCandidats" class="admin-section"></div>
+<div id="tabElecteurs" class="admin-section"></div>
+<div id="tabVotes" class="admin-section"></div>
+
+</div>
+</div>
+
+<script src="js/database.js"></script>
+<script src="js/main.js"></script>
+
+<script>
+const ADMIN = {username:"admin",password:"admin123"};
+
+document.addEventListener("DOMContentLoaded",()=>{
+const admin = JSON.parse(localStorage.getItem("currentAdmin"));
+if(admin){openDashboard()}
+});
+
+document.getElementById("adminLoginForm").addEventListener("submit",e=>{
+e.preventDefault();
+const f=new FormData(e.target);
+if(f.get("username")===ADMIN.username && f.get("password")===ADMIN.password){
+localStorage.setItem("currentAdmin",JSON.stringify({date:Date.now()}));
+openDashboard();
+}else alert("Identifiants incorrects");
+});
+
+function openDashboard(){
+loginSection.style.display="none";
+adminDashboard.style.display="block";
+loadAll();
+}
+
+function loadAll(){
+statElecteurs.textContent=db.getElecteurs().length;
+statCandidats.textContent=db.getCandidats().length;
+statVotes.textContent=db.getVotes().length;
+}
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+btn.onclick=()=>{
+document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+document.querySelectorAll(".admin-section").forEach(s=>s.classList.remove("active"));
+btn.classList.add("active");
+document.getElementById("tab"+btn.dataset.tab).classList.add("active");
+};
+});
+</script>
+
+</body>
+</html>

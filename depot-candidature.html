@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dépôt de Candidature - Univote</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <link rel="stylesheet" href="styles/common.css">
+
+    <style>
+        .logo-img {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            margin-right: 10px;
+        }
+
+        .photo-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-blue);
+            margin: 1rem auto;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-container">
+
+            <!-- Nouveau logo Univote ajouté -->
+            <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+                <a href="index.html" style="color: var(--accent-orange); text-decoration: none;">← Retour à l'accueil</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="form-container">
+        <h2 class="form-title">Déposer sa Candidature</h2>
+        <form id="candidatureForm">
+            <div class="form-group">
+                <label class="required">Nom</label>
+                <input type="text" name="nom" placeholder="Votre nom" required>
+            </div>
+            <div class="form-group">
+                <label class="required">Postnom</label>
+                <input type="text" name="postnom" placeholder="Votre postnom" required>
+            </div>
+            <div class="form-group">
+                <label class="required">Prénom</label>
+                <input type="text" name="prenom" placeholder="Votre prénom" required>
+            </div>
+            <div class="form-group">
+                <label class="required">Matricule</label>
+                <input type="text" name="matricule" placeholder="12345.6.12345" required 
+                       pattern="\d{5}\.\d{1}\.\d{5}">
+            </div>
+            <div class="form-group">
+                <label class="required">Poste visé</label>
+                <select name="poste" required>
+                    <option value="">Sélectionnez un poste</option>
+                    <option value="Président">Président</option>
+                    <option value="Vice-président">Vice-président</option>
+                    <option value="Secrétaire général">Secrétaire général</option>
+                    <option value="Trésorier">Trésorier</option>
+                    <option value="Commissaire aux comptes">Commissaire aux comptes</option>
+                    <option value="Conseiller">Conseiller</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="required">Biographie</label>
+                <textarea name="bio" placeholder="Présentez-vous et votre programme..." rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="required">Photo de profil</label>
+                <input type="file" name="photo" accept="image/*" required>
+                <img id="photoPreview" class="photo-preview" alt="Aperçu photo">
+            </div>
+            <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+            <button type="submit" class="btn">Soumettre ma Candidature</button>
+        </form>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        // Aperçu photo
+        document.querySelector('input[name="photo"]').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('candidatureForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const candidat = {
+                nom: cleanText(formData.get('nom')),
+                postnom: cleanText(formData.get('postnom')),
+                prenom: cleanText(formData.get('prenom')),
+                matricule: formData.get('matricule'),
+                poste: formData.get('poste'),
+                bio: formData.get('bio'),
+                photo: document.getElementById('photoPreview').src || ''
+            };
+            
+            if (!validateMatricule(candidat.matricule)) {
+                showMessage('❌ Format de matricule invalide. Exemple: 12345.6.12345', 'error');
+                return;
+            }
+            
+            try {
+                const nouveauCandidat = db.addCandidat(candidat);
+                showMessage(
+                    `✅ Candidature enregistrée avec succès !<br><br>
+                    <strong>Votre numéro de candidature :</strong> ${nouveauCandidat.numCandidat}<br>
+                    <strong>Votre mot de passe :</strong> ${nouveauCandidat.motDePasse}<br><br>
+                    ⚠️ <em>Conservez précieusement ces informations !</em>`,
+                    'success'
+                );
+                this.reset();
+                document.getElementById('photoPreview').style.display = 'none';
+                
+                grecaptcha.reset();
+            } catch (error) {
+                showMessage(`❌ ${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

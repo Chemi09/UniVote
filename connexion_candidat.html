@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion Candidat - Univote</title>
+
+  <link rel="stylesheet" href="styles/common.css">
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+  <style>
+    .logo-img {
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo-container" style="display:flex;align-items:center;">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+    <a href="index.html" style="color: var(--accent-orange); text-decoration: none;">
+      ← Retour à l'accueil
+    </a>
+  </div>
+</header>
+
+<div class="form-container">
+  <h2 class="form-title">Connexion Candidat</h2>
+
+  <form id="connexionCandidatForm">
+    <div class="form-group">
+      <label class="required">Numéro de candidature</label>
+      <input type="text" name="numCandidat" placeholder="Ex: C1234" required>
+    </div>
+
+    <div class="form-group">
+      <label class="required">Mot de passe</label>
+      <input type="password" name="motDePasse" placeholder="Votre mot de passe" required>
+    </div>
+
+    <div class="g-recaptcha"
+         data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+
+    <button type="submit" class="btn btn-primary">
+      Se connecter
+    </button>
+  </form>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <p>
+      Pas encore candidat ?
+      <a href="depot_candidature.html" style="color:var(--primary-blue);">
+        Déposer sa candidature
+      </a>
+    </p>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* --- Clé utilisée dans tout Univote --- */
+const CANDIDATS_KEY = "candidats";
+const CONNECTED_USER_KEY = "connectedUser";
+
+/* --- Utils --- */
+function loadCandidats() {
+  return JSON.parse(localStorage.getItem(CANDIDATS_KEY) || "[]");
+}
+
+/* --- Connexion candidat --- */
+document.getElementById("connexionCandidatForm")
+  .addEventListener("submit", function (e) {
+
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const numCandidat = formData.get("numCandidat").trim();
+    const motDePasse = formData.get("motDePasse").trim();
+
+    const candidats = loadCandidats();
+
+    const candidat = candidats.find(c =>
+      c.numCandidat === numCandidat &&
+      c.motDePasse === motDePasse
+    );
+
+    if (!candidat) {
+      alert("❌ Numéro de candidature ou mot de passe incorrect");
+      return;
+    }
+
+    /* Normalisation utilisateur pour tout le système */
+    const connectedUser = {
+      id: candidat.numCandidat,
+      numCandidat: candidat.numCandidat,
+      nom: candidat.nom,
+      prenom: candidat.prenom,
+      poste: candidat.poste,
+      photo: candidat.photo || "",
+      role: "candidat"
+    };
+
+    localStorage.setItem(
+      CONNECTED_USER_KEY,
+      JSON.stringify(connectedUser)
+    );
+
+    alert("✅ Connexion réussie — accès à votre espace candidat");
+
+    setTimeout(() => {
+      window.location.href = "espace-candidat.html";
+    }, 800);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vote - Univote</title>
+<link rel="stylesheet" href="styles/common.css">
+
+<style>
+/* === DESIGN CONSERVÉ ET OPTIMISÉ === */
+.poste-section{margin-bottom:2.5rem}
+.poste-title{color:var(--primary-blue);border-bottom:2px solid var(--accent-orange);padding-bottom:.5rem;margin-bottom:1rem;font-size:1.4rem}
+.candidats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.candidat-card{background:#fff;padding:1.25rem;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08);display:flex;gap:1rem;align-items:center;cursor:pointer;border:2px solid transparent;transition:.2s}
+.candidat-card:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(0,0,0,.12)}
+.candidat-card.selected{border-color:var(--success);background:rgba(52,168,83,.05)}
+.candidat-photo{width:70px;height:70px;border-radius:50%;object-fit:cover}
+.candidat-nom{font-weight:800;color:var(--primary-blue)}
+.candidat-poste{color:var(--accent-orange);font-weight:700;font-size:.9rem}
+.candidat-bio{font-size:.9rem;color:var(--dark-gray)}
+.select-indicator{width:20px;height:20px;border-radius:50%;border:2px solid #ccc}
+.candidat-card.selected .select-indicator{background:var(--success);border-color:var(--success)}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <img src="assets/IMG-20250821-WA0045-removebg-preview.png"
+         style="width:55px;height:55px;object-fit:contain">
+    <div class="logo-text">UNIVOTE</div>
+  </div>
+  <div id="voteStatus" class="vote-status status-open">🟢 VOTE OUVERT</div>
+</header>
+
+<div class="main-container">
+  <div id="voteInterface">
+    <div class="info-box" id="electeurInfo"></div>
+    <div id="listeCandidats"></div>
+
+    <div style="text-align:center;margin-top:1.5rem">
+      <button id="btnValider" class="btn btn-primary">Valider mon vote</button>
+      <button id="btnLogout" class="btn btn-secondary">Se déconnecter</button>
+    </div>
+  </div>
+
+  <div id="voteOk" class="info-box hidden" style="text-align:center">
+    <h2>✅ Vote enregistré</h2>
+    <p>Merci pour votre participation</p>
+    <button onclick="location.href='index.html'" class="btn btn-primary">
+      Retour accueil
+    </button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* === SÉCURITÉ CONNEXION === */
+const electeur = JSON.parse(localStorage.getItem("currentElecteur"));
+if(!electeur){
+  alert("Veuillez vous connecter");
+  location.href="connexion-electeur.html";
+}
+
+/* === DONNÉES === */
+const candidats = JSON.parse(localStorage.getItem("candidats")||"[]");
+const votes = JSON.parse(localStorage.getItem("votes")||"[]");
+const settings = JSON.parse(localStorage.getItem("settings")||'{"voteOpen":false}');
+const selections = {};
+
+/* === STATUT === */
+if(!settings.voteOpen){
+  document.getElementById("voteStatus").textContent="🔒 VOTE FERMÉ";
+  document.getElementById("voteStatus").className="vote-status status-closed";
+}
+
+/* === INFO ELECTEUR === */
+document.getElementById("electeurInfo").innerHTML=`
+<strong>${electeur.prenom} ${electeur.nom}</strong><br>
+Matricule : ${electeur.matricule}
+`;
+
+/* === DÉJÀ VOTÉ ? === */
+if(votes.some(v=>v.matricule===electeur.matricule)){
+  document.getElementById("voteInterface").classList.add("hidden");
+  document.getElementById("voteOk").classList.remove("hidden");
+}
+
+/* === AFFICHAGE CANDIDATS === */
+const container=document.getElementById("listeCandidats");
+const postes=[...new Set(candidats.map(c=>c.poste))];
+
+postes.forEach(poste=>{
+  const section=document.createElement("div");
+  section.className="poste-section";
+  section.innerHTML=`<h3 class="poste-title">${poste}</h3>`;
+  const grid=document.createElement("div");
+  grid.className="candidats-grid";
+
+  candidats.filter(c=>c.poste===poste).forEach(c=>{
+    const card=document.createElement("div");
+    card.className="candidat-card";
+    card.innerHTML=`
+      <img src="${c.photo||''}" class="candidat-photo">
+      <div>
+        <div class="candidat-nom">${c.prenom} ${c.nom}</div>
+        <div class="candidat-poste">${c.poste}</div>
+        <div class="candidat-bio">${c.bio||''}</div>
+      </div>
+      <div class="select-indicator"></div>
+    `;
+
+    card.onclick=()=>{
+      if(!settings.voteOpen)return;
+      grid.querySelectorAll(".candidat-card").forEach(x=>x.classList.remove("selected"));
+      card.classList.add("selected");
+      selections[poste]=c.numCandidat;
+    };
+
+    grid.appendChild(card);
+  });
+
+  section.appendChild(grid);
+  container.appendChild(section);
+});
+
+/* === VALIDATION VOTE === */
+document.getElementById("btnValider").onclick=()=>{
+  if(!settings.voteOpen)return alert("Vote fermé");
+  if(postes.some(p=>!selections[p]))return alert("Choisissez pour chaque poste");
+
+  votes.push({
+    matricule:electeur.matricule,
+    timestamp:new Date().toISOString(),
+    ...selections
+  });
+  localStorage.setItem("votes",JSON.stringify(votes));
+
+  document.getElementById("voteInterface").classList.add("hidden");
+  document.getElementById("voteOk").classList.remove("hidden");
+};
+
+/* === LOGOUT === */
+document.getElementById("btnLogout").onclick=()=>{
+  localStorage.removeItem("currentElecteur");
+  location.href="index.html";
+};
+</script>
+
+</body>
+</html>

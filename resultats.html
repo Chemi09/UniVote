@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résultats - Univote</title>
+
+<link rel="stylesheet" href="styles/common.css">
+
+<style>
+.results-container{max-width:1000px;margin:2rem auto;padding:0 1rem}
+.logo-image{width:60px;height:60px;object-fit:contain;margin-right:10px}
+.result-card{background:var(--white);padding:2rem;border-radius:16px;
+box-shadow:0 8px 25px rgba(0,0,0,.15);margin-bottom:2rem}
+.winner-badge{background:var(--success);color:#fff;padding:.5rem 1rem;
+border-radius:20px;font-weight:700;display:inline-block;margin-bottom:1rem}
+.vote-bar{background:var(--light-gray);border-radius:10px;margin:.5rem 0;overflow:hidden}
+.vote-fill{background:linear-gradient(90deg,var(--primary-blue),var(--secondary-blue));
+height:28px;border-radius:10px;color:#fff;font-weight:700;
+display:flex;align-items:center;padding-left:10px;transition:width .4s ease}
+.candidat-result{display:flex;justify-content:space-between;align-items:center;
+margin:1rem 0;padding:1rem;background:var(--light-gray);border-radius:10px}
+.vote-count{font-size:1.4rem;font-weight:800;color:var(--primary-blue)}
+.vote-percentage{font-weight:700;color:var(--dark-gray)}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <div class="logo-container">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" class="logo-image" alt="Univote">
+    <div>
+      <div class="logo-text">UNIVOTE</div>
+      <a href="index.html" style="color:var(--accent-orange);text-decoration:none">
+        ← Retour à l'accueil
+      </a>
+    </div>
+  </div>
+  <div class="vote-status status-closed">📊 RÉSULTATS</div>
+</header>
+
+<div class="results-container">
+
+<div class="result-card">
+<h2>Synthèse des Résultats</h2>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:1rem;margin-top:1.5rem">
+  <div style="text-align:center;padding:1.5rem;background:rgba(26,115,232,.1);border-radius:12px">
+    <div id="totalVotes" style="font-size:2rem;font-weight:800;color:var(--primary-blue)">0</div>
+    Votes Totaux
+  </div>
+  <div style="text-align:center;padding:1.5rem;background:rgba(52,168,83,.1);border-radius:12px">
+    <div id="participation" style="font-size:2rem;font-weight:800;color:var(--success)">0%</div>
+    Participation
+  </div>
+  <div style="text-align:center;padding:1.5rem;background:rgba(255,109,0,.1);border-radius:12px">
+    <div id="totalCandidats" style="font-size:2rem;font-weight:800;color:var(--accent-orange)">0</div>
+    Candidats
+  </div>
+</div>
+</div>
+
+<div id="resultatsContainer"></div>
+
+<div class="result-card" style="text-align:center">
+<p>Les résultats sont mis à jour automatiquement selon les votes enregistrés.</p>
+<button class="btn" onclick="chargerResultats()">🔄 Actualiser</button>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* --- Clés Univote --- */
+const CANDIDATS_KEY="candidats";
+const VOTES_KEY="univote_votes";
+const ELECTEURS_KEY="electeurs";
+
+/* --- Utils --- */
+const sanitize=s=>String(s??"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* --- Chargement --- */
+function chargerResultats(){
+
+const candidats=JSON.parse(localStorage.getItem(CANDIDATS_KEY)||"[]");
+const votes=JSON.parse(localStorage.getItem(VOTES_KEY)||"[]");
+const electeurs=JSON.parse(localStorage.getItem(ELECTEURS_KEY)||"[]");
+
+document.getElementById("totalVotes").textContent=votes.length;
+document.getElementById("totalCandidats").textContent=candidats.length;
+document.getElementById("participation").textContent=
+electeurs.length?Math.round(votes.length/electeurs.length*100)+"%":"0%";
+
+const postes=[...new Set(candidats.map(c=>c.poste))];
+let html="";
+
+postes.forEach(poste=>{
+const candidatsPoste=candidats.filter(c=>c.poste===poste);
+const votesPoste=votes.filter(v=>v[poste]);
+const totalVotesPoste=votesPoste.length;
+
+const compteur={};
+votesPoste.forEach(v=>compteur[v[poste]]=(compteur[v[poste]]||0)+1);
+
+let gagnant=null,max=0;
+for(const id in compteur){
+if(compteur[id]>max){
+max=compteur[id];
+gagnant=candidats.find(c=>String(c.numCandidat||c.id)===String(id));
+}}
+
+html+=`<div class="result-card"><h3>${poste}</h3>
+${gagnant?`<div class="winner-badge">🏆 ${sanitize(gagnant.prenom)} ${sanitize(gagnant.nom)} (${max} voix)</div>`:""}
+
+${candidatsPoste.map(c=>{
+const nb=compteur[c.numCandidat||c.id]||0;
+const pct=totalVotesPoste?((nb/totalVotesPoste)*100).toFixed(1):0;
+return`
+<div class="candidat-result">
+<div>
+<strong>${sanitize(c.prenom)} ${sanitize(c.nom)}</strong><br>
+<small>${sanitize(c.bio||"")}</small>
+</div>
+<div>
+<div class="vote-count">${nb}</div>
+<div class="vote-percentage">${pct}%</div>
+</div>
+</div>
+<div class="vote-bar"><div class="vote-fill" style="width:${pct}%">${pct}%</div></div>`;
+}).join("")}
+
+<p style="text-align:center;margin-top:1rem">
+<strong>Total votes :</strong> ${totalVotesPoste}
+</p></div>`;
+});
+
+document.getElementById("resultatsContainer").innerHTML=
+html||`<div class="result-card" style="text-align:center">Aucun résultat disponible</div>`;
+}
+
+document.addEventListener("DOMContentLoaded",chargerResultats);
+</script>
+
+</body>
+</html>

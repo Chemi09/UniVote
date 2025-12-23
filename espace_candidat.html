@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Candidat - Univote</title>
+
+  <link rel="stylesheet" href="styles/common.css">
+
+  <style>
+    .logo-img {
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo-container" style="display:flex;align-items:center;">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+    <div>
+      <div class="logo-text">UNIVOTE</div>
+      <a href="index.html" style="color: var(--accent-orange); text-decoration: none;">
+        ← Retour à l'accueil
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="form-container">
+  <h2 class="form-title">Espace Candidat</h2>
+
+  <div id="candidatInfo"></div>
+
+  <div style="text-align:center;margin-top:2rem;">
+    <a href="resultat.html" class="btn" style="display:block;margin-bottom:1rem;">
+      📊 Voir les résultats
+    </a>
+    <button id="btnLogout" class="btn-secondary">
+      Se déconnecter
+    </button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* --- Clé globale Univote --- */
+const CONNECTED_USER_KEY = "connectedUser";
+
+/* --- Utils --- */
+function sanitize(str) {
+  if (!str && str !== 0) return "";
+  return String(str)
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/* --- Init --- */
+document.addEventListener("DOMContentLoaded", () => {
+
+  const connectedUser =
+    JSON.parse(localStorage.getItem(CONNECTED_USER_KEY) || "null");
+
+  if (!connectedUser || connectedUser.role !== "candidat") {
+    alert("Accès non autorisé — veuillez vous connecter.");
+    window.location.href = "connexion_candidat.html";
+    return;
+  }
+
+  document.getElementById("candidatInfo").innerHTML = `
+    <div style="text-align:center;margin-bottom:2rem;">
+      ${
+        connectedUser.photo
+          ? `<img src="${sanitize(connectedUser.photo)}"
+                 alt="Photo candidat"
+                 style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin-bottom:1rem;">`
+          : ""
+      }
+
+      <h3>${sanitize(connectedUser.prenom)} ${sanitize(connectedUser.nom)}</h3>
+
+      <p><strong>Poste :</strong> ${sanitize(connectedUser.poste)}</p>
+      <p><strong>Numéro de candidature :</strong> ${sanitize(connectedUser.numCandidat)}</p>
+
+      <div style="background:var(--light-gray);padding:1rem;border-radius:8px;margin-top:1rem;">
+        <p><strong>Biographie :</strong></p>
+        <p>${sanitize(connectedUser.bio || "Aucune biographie fournie")}</p>
+      </div>
+    </div>
+  `;
+});
+
+/* --- Déconnexion --- */
+document.getElementById("btnLogout").addEventListener("click", () => {
+  localStorage.removeItem(CONNECTED_USER_KEY);
+  window.location.href = "index.html";
+});
+</script>
+
+</body>
+</html>

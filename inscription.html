@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription - Univote</title>
+
+<link rel="stylesheet" href="styles/common.css">
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <style>
+    .logo-img {
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      margin-right: 5px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<header class="header"><div class="logo-container" style="display:flex;align-items:center;">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+   
+            <a href="index.html" style="color:var(--accent-orange); text-decoration:none;">
+                ← Retour à l'accueil
+            </a>
+        </div>
+    </div>
+</header>
+
+<div class="form-container">
+    <h2 class="form-title">Inscription Électeur</h2>
+
+    <form id="inscriptionForm">
+        <div class="form-group">
+            <label class="required">Nom</label>
+            <input type="text" name="nom" required>
+        </div>
+
+        <div class="form-group">
+            <label class="required">Postnom</label>
+            <input type="text" name="postnom" required>
+        </div>
+
+        <div class="form-group">
+            <label class="required">Prénom</label>
+            <input type="text" name="prenom" required>
+        </div>
+
+        <div class="form-group">
+            <label class="required">Matricule</label>
+            <input type="text" name="matricule" placeholder="12345.6.12345"
+                   pattern="\d{5}\.\d{1}\.\d{5}" required>
+            <small>Format: 12345.6.12345</small>
+        </div>
+
+        <div class="form-group">
+            <label class="required">Mot de passe</label>
+            <input type="password" name="password" minlength="6" required>
+        </div>
+
+        <div class="g-recaptcha"
+             data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+
+        <button type="submit" class="btn">S'inscrire</button>
+    </form>
+
+    <div style="text-align:center;margin-top:1rem;">
+        <p>Déjà inscrit ?
+            <a href="connexion-electeur.html" style="color:var(--primary-blue);">
+                Se connecter
+            </a>
+        </p>
+    </div>
+</div>
+
+<script>
+// ====== UTILITAIRES ======
+function cleanText(t){ return t.trim(); }
+function validateMatricule(m){ return /^\d{5}\.\d{1}\.\d{5}$/.test(m); }
+function showMessage(msg,type){
+    alert(msg);
+}
+function goTo(page){
+    window.location.href = page + ".html";
+}
+
+// ====== INSCRIPTION ======
+document.getElementById("inscriptionForm").addEventListener("submit",function(e){
+    e.preventDefault();
+
+    const fd = new FormData(this);
+    const electeur = {
+        nom: cleanText(fd.get("nom")),
+        postnom: cleanText(fd.get("postnom")),
+        prenom: cleanText(fd.get("prenom")),
+        matricule: fd.get("matricule"),
+        password: fd.get("password")
+    };
+
+    if(!validateMatricule(electeur.matricule)){
+        showMessage("❌ Matricule invalide","error");
+        return;
+    }
+
+    const electeurs = JSON.parse(localStorage.getItem("electeurs")||"[]");
+
+    if(electeurs.some(e=>e.matricule===electeur.matricule)){
+        showMessage("❌ Ce matricule existe déjà","error");
+        return;
+    }
+
+    electeurs.push(electeur);
+    localStorage.setItem("electeurs",JSON.stringify(electeurs));
+
+    showMessage("✅ Inscription réussie !","success");
+
+    grecaptcha.reset();
+
+    setTimeout(()=>{
+        goTo("connexion_electeur");
+    },1500);
+});
+</script>
+
+</body>
+</html>

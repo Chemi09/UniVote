@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Univote - Accueil</title>
+<link rel="stylesheet" href="styles/common.css">
+<style>
+body { font-family: Arial,sans-serif; margin:0; padding:0; background:#007bff; }
+.header { display:flex; align-items:center; justify-content:space-between; padding:15px; background:#007bff; color:white; }
+.logo-container { display:flex; align-items:center; gap:10px; }
+.logo { font-weight:bold; font-size:1.5em; }
+.logo-text { font-size:1.2em; }
+.logo-subtitle { font-size:0.85em; color:#cce5ff; }
+.main-container { max-width:1000px; margin:20px auto; padding:0 15px; }
+.welcome-section { text-align:center; margin-bottom:25px; }
+.nav-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px; margin-bottom:25px; }
+.nav-card { background:gray; padding:15px; border-radius:10px; text-align:center; text-decoration:none; color:#333; box-shadow:0 2px 6px rgba(0,0,0,0.1); transition:all 0.2s; }
+.nav-card:hover { transform:translateY(-3px); box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.nav-icon { font-size:2rem; display:block; margin-bottom:10px; }
+.quick-stats { display:flex; justify-content:space-around; gap:15px; }
+.stat { background:gray; padding:15px; border-radius:10px; text-align:center; flex:1; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+.stat-number { font-weight:bold; font-size:1.5rem; display:block; }
+.stat-label { font-size:0.9rem; color:black; }
+.vote-status { font-weight:bold; }
+.status-closed { color:#dc3545; }
+.status-open { color:#28a745; }
+
+  
+    .logo-img {
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      margin-right: 5px;
+    }
+  
+</style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-container" style="display:flex;align-items:center;">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+    <div class="vote-status status-closed" id="globalVoteStatus">🔒 VOTE FERMÉ</div>
+</header>
+
+<div class="main-container">
+    <section class="welcome-section">
+        <h1>Bienvenue sur Univote</h1>
+        <p>Le système de vote intelligent dédié à la communauté universitaire</p>
+    </section>
+
+    <div class="nav-grid">
+        <a href="#" class="nav-card inscription" data-page="inscription.html">
+            <span class="nav-icon">📝</span>
+            <h3>S'inscrire</h3>
+            <p>Créer votre compte électeur</p>
+        </a>
+
+        <a href="#" class="nav-card electeur" data-page="connexion-electeur.html">
+            <span class="nav-icon">🗳️</span>
+            <h3>Voter</h3>
+            <p>Accéder à l'espace de vote</p>
+        </a>
+
+        <a href="#" class="nav-card candidat" data-page="depot_candidature.html">
+            <span class="nav-icon">👨‍💼</span>
+            <h3>Candidater</h3>
+            <p>Déposer votre candidature</p>
+        </a>
+
+        <a href="#" class="nav-card admin" data-page="admin.html">
+            <span class="nav-icon">🔧</span>
+            <h3>Administration</h3>
+            <p>Gérer le processus électoral</p>
+        </a>
+
+        <a href="#" class="nav-card electeur-quick" data-page="connexion-electeur.html">
+            <span class="nav-icon">🟢</span>
+            <h3>Voter comme électeur</h3>
+            <p>Accès rapide espace électeur</p>
+        </a>
+
+        <a href="#" class="nav-card candidat-quick" data-page="connexion-candidat.html">
+            <span class="nav-icon">🔵</span>
+            <h3>Voter comme candidat</h3>
+            <p>Accès rapide espace candidat</p>
+        </a>
+    </div>
+
+    <div class="quick-stats">
+        <div class="stat">
+            <span class="stat-number" id="homeTotalElecteurs">0</span>
+            <span class="stat-label">Électeurs inscrits</span>
+        </div>
+        <div class="stat">
+            <span class="stat-number" id="homeTotalCandidats">0</span>
+            <span class="stat-label">Candidats</span>
+        </div>
+        <div class="stat">
+            <span class="stat-number" id="homeVoteRate">0%</span>
+            <span class="stat-label">Participation</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- Navigation dynamique selon Builder / localStorage ---
+document.querySelectorAll('.nav-card').forEach(card => {
+    card.addEventListener('click', e => {
+        e.preventDefault();
+        const page = card.dataset.page;
+        if(page){
+            window.location.href = page;
+        }
+    });
+});
+
+// --- Statistiques dynamiques ---
+const electeurs = JSON.parse(localStorage.getItem('electeurs')||'[]');
+const candidats = JSON.parse(localStorage.getItem('candidats')||'[]');
+const votes = JSON.parse(localStorage.getItem('votes')||'[]');
+
+document.getElementById('homeTotalElecteurs').textContent = electeurs.length;
+document.getElementById('homeTotalCandidats').textContent = candidats.length;
+document.getElementById('homeVoteRate').textContent = electeurs.length>0 ? Math.round((votes.length / electeurs.length)*100)+'%' : '0%';
+
+// --- Statut vote ---
+const voteStatus = JSON.parse(localStorage.getItem('voteStatus')||'{"voteOpen":false}');
+const statusElem = document.getElementById('globalVoteStatus');
+if(voteStatus.voteOpen){
+    statusElem.textContent = '✅ VOTE OUVERT';
+    statusElem.className = 'vote-status status-open';
+}else{
+    statusElem.textContent = '🔒 VOTE FERMÉ';
+    statusElem.className = 'vote-status status-closed';
+}
+</script>
+
+</body>
+</html>

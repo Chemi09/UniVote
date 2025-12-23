@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion Électeur - Univote</title>
+
+<link rel="stylesheet" href="styles/common.css">
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+  <style>
+    .logo-img {
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      margin-right: 5px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<header class="header"><div class="logo-container" style="display:flex;align-items:center;">
+    <img src="IMG-20250821-WA0045-removebg-preview.png" alt="Logo Univote" class="logo-img">
+    
+            <a href="index.html" style="color:var(--accent-orange); text-decoration:none;">
+                ← Retour à l'accueil
+            </a>
+        </div>
+    </div>
+
+    <div class="vote-status status-closed" id="pageVoteStatus">
+        🔒 VOTE FERMÉ
+    </div>
+</header>
+
+<div class="form-container">
+    <h2 class="form-title">Connexion Électeur</h2>
+
+    <form id="connexionElecteurForm">
+        <div class="form-group">
+            <label class="required">Matricule</label>
+            <input type="text" name="matricule"
+                   placeholder="12345.6.12345" required>
+        </div>
+
+        <div class="form-group">
+            <label class="required">Mot de passe</label>
+            <input type="password" name="password" required>
+        </div>
+
+        <div class="g-recaptcha"
+             data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+
+        <button type="submit" class="btn">Se connecter</button>
+    </form>
+
+    <div style="text-align:center;margin-top:1rem;">
+        <p>Pas encore inscrit ?
+            <a href="inscription.html" style="color:var(--primary-blue);">
+                S'inscrire
+            </a>
+        </p>
+    </div>
+</div>
+
+<script>
+// ====== STATUT DU VOTE ======
+document.addEventListener("DOMContentLoaded",()=>{
+    const settings = JSON.parse(localStorage.getItem("settings")||'{"voteOpen":false}');
+    const status = document.getElementById("pageVoteStatus");
+
+    if(settings.voteOpen){
+        status.textContent = "🟢 VOTE OUVERT";
+        status.className = "vote-status status-open";
+    }
+});
+
+// ====== CONNEXION ELECTEUR ======
+document.getElementById("connexionElecteurForm").addEventListener("submit",function(e){
+    e.preventDefault();
+
+    const fd = new FormData(this);
+    const matricule = fd.get("matricule");
+    const password = fd.get("password");
+
+    const electeurs = JSON.parse(localStorage.getItem("electeurs")||"[]");
+    const electeur = electeurs.find(e =>
+        e.matricule === matricule && e.password === password
+    );
+
+    if(!electeur){
+        alert("❌ Matricule ou mot de passe incorrect");
+        return;
+    }
+
+    const settings = JSON.parse(localStorage.getItem("settings")||'{"voteOpen":false}');
+    if(!settings.voteOpen){
+        alert("❌ Le vote est actuellement fermé");
+        return;
+    }
+
+    const votes = JSON.parse(localStorage.getItem("votes")||"[]");
+    if(votes.some(v=>v.matricule===electeur.matricule)){
+        alert("❌ Vous avez déjà voté");
+        return;
+    }
+
+    localStorage.setItem("currentElecteur",JSON.stringify(electeur));
+    alert("✅ Connexion réussie. Redirection...");
+
+    setTimeout(()=>{
+        window.location.href = "vote.html";
+    },1500);
+});
+</script>
+
+</body>
+</html>
